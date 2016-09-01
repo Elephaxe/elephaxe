@@ -31,6 +31,11 @@ class HaxeMethod implements TranspilerInterface
     private $arguments = array();
 
     /**
+     * @var string
+     */
+    private $returnType = 'Dynamic';
+
+    /**
      * {@inheritDoc}
      */
     public function transpile()
@@ -49,7 +54,10 @@ class HaxeMethod implements TranspilerInterface
         }
 
         $result .= join(', ', $arguments);
-        $result .= ')';
+        $result .= ') : ' . $this->returnType . '\n';
+
+        $result .= '{';
+        $result .= '}';
 
         return $result;
     }
@@ -146,6 +154,31 @@ class HaxeMethod implements TranspilerInterface
     public function setArguments($arguments)
     {
         $this->arguments = $arguments;
+
+        return $this;
+    }
+
+
+    /**
+     * Get the value of Return Type
+     *
+     * @return string
+     */
+    public function getReturnType()
+    {
+        return $this->returnType;
+    }
+
+    /**
+     * Set the value of Return Type
+     *
+     * @param string $returnType
+     *
+     * @return self
+     */
+    public function setReturnType($returnType)
+    {
+        $this->returnType = $returnType;
 
         return $this;
     }
