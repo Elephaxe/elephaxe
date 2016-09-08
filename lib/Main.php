@@ -1,20 +1,16 @@
 <?php
 
 require '../php-ast/util.php';
-require __DIR__ .'/TranspilerInterface.php';
-require __DIR__ .'/Haxe/HaxeArgument.php';
-require __DIR__ .'/Haxe/HaxeMethod.php';
 
-echo ast_dump(ast\parse_code('<?php
-    $x = 5;
+echo var_export(ast\parse_code('
+      print "Hello World";
+ ', $version=30), true);
 
-    if ($x == 10) {
-        return 5;
-    } elseif ($x == 5) {
-        if (true) {
-            echo "ok";
-        }
+echo ast_dump(ast\parse_code('
+    <?php 
+    if (true) {
+        print "Hello World";
+
     }
-
-    return;
- ?>', $version=30));
+    ?>
+ ', $version=30));

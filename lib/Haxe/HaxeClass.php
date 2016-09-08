@@ -12,6 +12,16 @@ class HaxeClass implements TranspilerInterface
     /**
      * @var string
      */
+    private $package;
+
+    /**
+     * @var array
+     */
+    private $imports;
+
+    /**
+     * @var string
+     */
     private $name;
 
     /**
@@ -39,12 +49,43 @@ class HaxeClass implements TranspilerInterface
      */
     private $constants;
 
+    public function __construct()
+    {
+        $this->attributes = [];
+        $this->methods = [];
+        $this->constants = [];
+        $this->imports = [];
+        $this->implements = [];
+    }
+
     /**
      * {@inheritDoc}
      */
     public function transpile()
     {
-        return '';
+        if ($this->package) {
+            $result .= sprintf('package %s;' . PHP_EOL, $this->package);
+        }
+
+        foreach ($this->imports as $import) {
+            $result .= sprintf('import %s;' . PHP_EOL, $import);
+        }
+
+        // @todo extends/implements
+        $result .= sprintf('class %s' . PHP_EOL, $this->name);
+        $result .= '{' . PHP_EOL;
+
+        foreach ($this->attributes as $attribute) {
+            $result .= $attribute->transpile() . PHP_EOL;
+        }
+
+        foreach ($this->methods as $method) {
+            $result .= $method->transpile() . PHP_EOL;
+        }
+
+        $result .= '}';
+
+        return $result;
     }
 
     /**
@@ -144,6 +185,20 @@ class HaxeClass implements TranspilerInterface
     }
 
     /**
+     * Adds an attribute into the class
+     *
+     * @param HaxeAttribute $attribute
+     *
+     * @return self
+     */
+    public function addAttribute(HaxeAttribute $attribute)
+    {
+        $this->attributes[] = $attribute;
+
+        return $this;
+    }
+
+    /**
      * Get the value of Methods
      *
      * @return HaxeMethod[]
@@ -163,6 +218,106 @@ class HaxeClass implements TranspilerInterface
     public function setMethods(array $methods)
     {
         $this->methods = $methods;
+
+        return $this;
+    }
+
+    /**
+     * Adds a new method to the class
+     *
+     * @param HaxeMethod $method
+     *
+     * @return self
+     */
+    public function addMethod(HaxeMethod $method)
+    {
+        $this->methods[] = $method;
+
+        return $this;
+    }
+
+    /**
+     * Get the value of Constants
+     *
+     * @return HaxeConstant[]
+     */
+    public function getConstants()
+    {
+        return $this->constants;
+    }
+
+    /**
+     * Set the value of Constants
+     *
+     * @param HaxeConstant[] $constants
+     *
+     * @return self
+     */
+    public function setConstants(array $constants)
+    {
+        $this->constants = $constants;
+
+        return $this;
+    }
+
+    /**
+     * Adds a new constant to the class
+     *
+     * @param HaxeConstant $constant
+     *
+     * @return self
+     */
+    public function addConstant(HaxeConstant $constant)
+    {
+        $this->constants[] = $constant;
+
+        return $this;
+    }
+
+    /**
+     * Get the value of Package
+     *
+     * @return string
+     */
+    public function getPackage()
+    {
+        return $this->package;
+    }
+
+    /**
+     * Set the value of Package
+     *
+     * @param string $package
+     *
+     * @return self
+     */
+    public function setPackage($package)
+    {
+        $this->package = $package;
+
+        return $this;
+    }
+
+    /**
+     * Get the value of Imports
+     *
+     * @return array
+     */
+    public function getImports()
+    {
+        return $this->imports;
+    }
+
+    /**
+     * Set the value of Imports
+     *
+     * @param array $imports
+     *
+     * @return self
+     */
+    public function setImports(array $imports)
+    {
+        $this->imports = $imports;
 
         return $this;
     }
