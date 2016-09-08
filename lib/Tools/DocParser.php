@@ -21,7 +21,8 @@ class DocParser
         $matches = array();
 
         $docblock = is_string($docblock) ? $docblock : null;
-
+        $tags = [];
+        
         if ($docblock) {
             preg_match_all('/\*\s+(@[a-z-]+)([^@]*)\n/', $docblock, $matches, PREG_SET_ORDER);
 
@@ -31,7 +32,7 @@ class DocParser
                 }
 
                 $tagValue = $match[2];
-                $tagValue = $this->normalizeNewlines($tagValue);
+                $tagValue = str_replace(array("\n", "\r\n", PHP_EOL), "\n", $tagValue);
 
                 // Remove the delimiters of the docblock itself at the start of each line, if any.
                 $tagValue = preg_replace('/\n\s+\*\s*/', ' ', $tagValue);
@@ -42,6 +43,8 @@ class DocParser
                 $tags[$match[1]][] = trim($tagValue);
             }
         }
+
+        return $tags;
     }
 
     /**
@@ -55,6 +58,6 @@ class DocParser
     {
         $tags = self::getTags($docComment);
 
-        return isset($tags[self::TAG_VAR]) ? $tags[self::TAG_VAR] : null;
+        return isset($tags[self::TAG_VAR]) ? $tags[self::TAG_VAR][0] : null;
     }
 }

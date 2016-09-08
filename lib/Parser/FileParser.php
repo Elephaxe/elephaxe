@@ -4,8 +4,10 @@ namespace Elephaxe\Parser;
 
 use Elephaxe\Parser\Context;
 use Elephaxe\Haxe\HaxeClass;
+use Elephaxe\Haxe\HaxeMethod;
 use Elephaxe\Haxe\HaxeAttribute;
 use Elephaxe\Tools\DocParser;
+use Elephaxe\Tools\HaxeMapping;
 
 /**
  * Top parser
@@ -51,6 +53,7 @@ class FileParser
     {
         $this->context = new Context();
         $this->buildClassMeta();
+        return $this->buildClassDefinition();
     }
 
     /**
@@ -64,19 +67,19 @@ class FileParser
 
             // Namespace search
             if (preg_match(self::NAMESPACE_PATTERN, $line, $matches) === 1) {
-                $context->setCurrentNamespace(trim($matches[1]));
+                $this->context->setCurrentNamespace(trim($matches[1]));
                 continue;
             }
 
             // Class name
             if (preg_match(self::DEFINITION_PATTERN, $line, $matches) === 1) {
-                $context->setClassName(trim($matches[1]));
+                $this->context->setClassName(trim($matches[1]));
                 break; // Stop after class found, let the reflection do the next job
             }
 
             // Uses
             if (preg_match(self::USE_PATTERN, $line, $matches) === 1) {
-                $context->addUse($matches[1]);
+                $this->context->addUse($matches[1]);
                 continue;
             }
         }
@@ -89,12 +92,29 @@ class FileParser
     {
         $reflection = new \ReflectionClass($this->context->getFullClassName());
         $haxeClass = new HaxeClass();
-        $haxeClass->setPackage(implode('.', explode('\\', $this->context->getCurrentNamespace())));
+        $haxeClass
+            ->setName($this->context->getClassName())
+            ->setPackage(implode('.', explode('\\', $this->context->getCurrentNamespace())))
+        ;
 
+        $this->parseProperties($reflection, $haxeClass);
+        $this->parseMethods($reflection, $haxeClass);
+
+        return $haxeClass->transpile();
+    }
+
+    /**
+     * Parse reflection class's properties
+     *
+     * @param  ReflectionClass $reflection
+     * @param  HaxeClass       $haxeClass
+     */
+    private function parseProperties(\ReflectionClass $reflection, HaxeClass $haxeClass)
+    {
         // Retrieves information about properties/attributes.
         foreach ($reflection->getProperties() as $attribute) {
             // Inherited method not write there.
-            if ($attribute->getDeclaringClass() != $this->context->getClassName()) {
+            if ($attribute->getDeclaringClass()->getName() != $this->context->getFullClassName()) {
                 continue;
             }
 
@@ -106,10 +126,46 @@ class FileParser
                     ? HaxeAttribute::ATTRIBUTE_VISIBILITY_PRIVATE
                     : HaxeAttribute::ATTRIBUTE_VISIBILITY_PUBLIC
                 )
-                ->setType(DocParser::getVarType($attribute->getDocComment()) ?: Context::DEFAULT_TYPE)
+                ->setType(DocParser::getVarType($attribute->getDocComment())
+                    ? HaxeMapping::getHaxeType(DocParser::getVarType($attribute->getDocComment()))
+                    : Context::DEFAULT_TYPE
+                )
             ;
 
             $haxeClass->addAttribute($haxeAttribute);
+        }
+    }
+
+    /**
+     * Parse methods from the ReflectionClass
+     *
+     * @param  ReflectionClass $reflection
+     * @param  HaxeClass       $haxeClass
+     */
+    private function parseMethods(\ReflectionClass $reflection, HaxeClass $haxeClass)
+    {
+        // Retrieves information about methods
+        foreach ($reflection->getMethods() as $method) {
+            // Inherited method not write there.
+            if ($method->getDeclaringClass()->getName() != $this->context->getFullClassName()) {
+                continue;
+            }
+
+            $haxeMethod = new HaxeMethod();
+            $haxeMethod
+                ->setName($method->getName() != '__construct' ? $method->getName() : 'new') // new in haxe
+                ->setIsStatic($method->isStatic())
+                ->setVisibility($method->isPrivate()
+                    ? HaxeMethod::METHOD_VISIBILITY_PRIVATE
+                    : HaxeMethod::METHOD_VISIBILITY_PUBLIC
+                )
+                ->setReturnType($method->hasReturnType()
+                    ? HaxeMapping::getHaxeType($method->getReturnType())
+                    : Context::DEFAULT_TYPE
+                )
+            ;
+
+            $haxeClass->addMethod($haxeMethod);
         }
     }
 }

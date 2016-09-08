@@ -4,11 +4,12 @@ namespace Elephaxe\Haxe;
 
 use Elephaxe\TranspilerInterface;
 use Elephaxe\Haxe\HaxeArgument;
+use Elephaxe\Tools\Utils;
 
 class HaxeMethod implements TranspilerInterface
 {
-    const ATTRIBUTE_VISIBILITY_PUBLIC = 'public';
-    const ATTRIBUTE_VISIBILITY_PRIVATE = 'private';
+    const METHOD_VISIBILITY_PUBLIC = 'public';
+    const METHOD_VISIBILITY_PRIVATE = 'private';
 
     /**
      * @var string
@@ -23,7 +24,7 @@ class HaxeMethod implements TranspilerInterface
     /**
      * @var string
      */
-    private $visibility = self::ATTRIBUTE_VISIBILITY_PUBLIC;
+    private $visibility = self::METHOD_VISIBILITY_PUBLIC;
 
     /**
      * @var HaxeArgument[]
@@ -54,10 +55,10 @@ class HaxeMethod implements TranspilerInterface
         }
 
         $result .= join(', ', $arguments);
-        $result .= ') : ' . $this->returnType . '\n';
+        $result .= ') : ' . $this->returnType . PHP_EOL;
 
-        $result .= '{';
-        $result .= '}';
+        $result .= Utils::indent(1) . '{' . PHP_EOL;
+        $result .= Utils::indent(1) . '}';
 
         return $result;
     }

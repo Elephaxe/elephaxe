@@ -6,6 +6,7 @@ use Elephaxe\Haxe\HaxeAttribute;
 use Elephaxe\Haxe\HaxeMethod;
 use Elephaxe\Haxe\HaxeConstant;
 use Elephaxe\TranspilerInterface;
+use Elephaxe\Tools\Utils;
 
 class HaxeClass implements TranspilerInterface
 {
@@ -63,6 +64,8 @@ class HaxeClass implements TranspilerInterface
      */
     public function transpile()
     {
+        $result = '';
+
         if ($this->package) {
             $result .= sprintf('package %s;' . PHP_EOL, $this->package);
         }
@@ -76,10 +79,12 @@ class HaxeClass implements TranspilerInterface
         $result .= '{' . PHP_EOL;
 
         foreach ($this->attributes as $attribute) {
+            $result .= Utils::indent(1);
             $result .= $attribute->transpile() . PHP_EOL;
         }
 
         foreach ($this->methods as $method) {
+            $result .= Utils::indent(1);
             $result .= $method->transpile() . PHP_EOL;
         }
 
