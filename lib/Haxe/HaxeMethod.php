@@ -63,7 +63,7 @@ class HaxeMethod implements TranspilerInterface
         $result .= ') : ' . $this->returnType . PHP_EOL;
 
         $result .= Utils::indent(1) . '{' . PHP_EOL;
-        $result .= $this->body . PHP_EOL;
+        $result .= $this->body;
         $result .= Utils::indent(1) . '}';
 
         return $result;
