@@ -5,6 +5,7 @@ namespace Elephaxe\Parser;
 use Elephaxe\Parser\Context;
 use Elephaxe\Haxe\HaxeClass;
 use Elephaxe\Haxe\HaxeMethod;
+use Elephaxe\Haxe\HaxeArgument;
 use Elephaxe\Haxe\HaxeAttribute;
 use Elephaxe\Tools\DocParser;
 use Elephaxe\Tools\HaxeMapping;
@@ -165,7 +166,33 @@ class FileParser
                 )
             ;
 
+            $this->parseArguments($method, $haxeMethod);
             $haxeClass->addMethod($haxeMethod);
+        }
+    }
+
+    /**
+     * Parse function's arguments
+     *
+     * @param  ReflectionFunctionAbstract $reflection
+     * @param  HaxeMethod                 $haxeMethod
+     */
+    private function parseArguments(\ReflectionFunctionAbstract $reflection, HaxeMethod $haxeMethod)
+    {
+        $args = $reflection->getParameters();
+
+        $optionals = array();
+        $parameters = array();
+
+        foreach ($args as $argument) {
+            $haxeArgument = new HaxeArgument();
+            $haxeArgument
+                ->setName($argument->getName())
+                ->setOptional($argument->isOptional())
+                ->setType($argument->hasType() ? HaxeMapping::getHaxeType($argument->getType()) : Context::DEFAULT_TYPE)
+            ;
+
+            $haxeMethod->addArgument($haxeArgument);
         }
     }
 }

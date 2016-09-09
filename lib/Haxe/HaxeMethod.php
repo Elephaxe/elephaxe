@@ -63,6 +63,11 @@ class HaxeMethod implements TranspilerInterface
         return $result;
     }
 
+    public function __construct()
+    {
+        $this->arguments = [];
+    }
+
     /**
      * Get the value of Name
      *
@@ -159,6 +164,19 @@ class HaxeMethod implements TranspilerInterface
         return $this;
     }
 
+    /**
+     * Adds an argument
+     *
+     * @param HaxeArgument $argument
+     *
+     * @return self
+     */
+    public function addArgument(HaxeArgument $argument)
+    {
+        $this->arguments[] = $argument;
+
+        return $this;
+    }
 
     /**
      * Get the value of Return Type
