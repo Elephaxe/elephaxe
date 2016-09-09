@@ -37,6 +37,11 @@ class HaxeMethod implements TranspilerInterface
     private $returnType = 'Dynamic';
 
     /**
+     * @var string
+     */
+    private $body;
+
+    /**
      * {@inheritDoc}
      */
     public function transpile()
@@ -58,6 +63,7 @@ class HaxeMethod implements TranspilerInterface
         $result .= ') : ' . $this->returnType . PHP_EOL;
 
         $result .= Utils::indent(1) . '{' . PHP_EOL;
+        $result .= $this->body . PHP_EOL;
         $result .= Utils::indent(1) . '}';
 
         return $result;
@@ -198,6 +204,31 @@ class HaxeMethod implements TranspilerInterface
     public function setReturnType($returnType)
     {
         $this->returnType = $returnType;
+
+        return $this;
+    }
+
+
+    /**
+     * Get the value of Body
+     *
+     * @return string
+     */
+    public function getBody()
+    {
+        return $this->body;
+    }
+
+    /**
+     * Set the value of Body
+     *
+     * @param string $body
+     *
+     * @return self
+     */
+    public function setBody($body)
+    {
+        $this->body = $body;
 
         return $this;
     }

@@ -3,6 +3,7 @@
 namespace Elephaxe\Parser;
 
 use Elephaxe\Parser\Context;
+use Elephaxe\Parser\AstParser;
 use Elephaxe\Haxe\HaxeClass;
 use Elephaxe\Haxe\HaxeMethod;
 use Elephaxe\Haxe\HaxeArgument;
@@ -152,6 +153,13 @@ class FileParser
                 continue;
             }
 
+            $code = $this->data;
+            $astParser = new AstParser(array_splice(
+                $code,
+                $method->getStartLine(),
+                $method->getEndLine() - $method->getStartLine()
+            ));
+
             $haxeMethod = new HaxeMethod();
             $haxeMethod
                 ->setName($method->getName() != '__construct' ? $method->getName() : 'new') // new in haxe
@@ -164,6 +172,7 @@ class FileParser
                     ? HaxeMapping::getHaxeType($method->getReturnType())
                     : Context::DEFAULT_TYPE
                 )
+                ->setBody($astParser->process());
             ;
 
             $this->parseArguments($method, $haxeMethod);
@@ -186,10 +195,16 @@ class FileParser
 
         foreach ($args as $argument) {
             $haxeArgument = new HaxeArgument();
+            $defaultType = $argument->isOptional()
+                ? HaxeMapping::guessValueType($argument->getDefaultValue())
+                : Context::DEFAULT_TYPE
+            ;
+
             $haxeArgument
                 ->setName($argument->getName())
                 ->setOptional($argument->isOptional())
-                ->setType($argument->hasType() ? HaxeMapping::getHaxeType($argument->getType()) : Context::DEFAULT_TYPE)
+                ->setType($argument->hasType() ? HaxeMapping::getHaxeType($argument->getType()) : $defaultType)
+                ->setValue($argument->isOptional() ? $argument->getDefaultValue() : null)
             ;
 
             $haxeMethod->addArgument($haxeArgument);

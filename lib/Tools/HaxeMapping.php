@@ -1,6 +1,7 @@
 <?php
 
 namespace Elephaxe\Tools;
+use phpDocumentor\Reflection\Types\Context;
 
 class HaxeMapping
 {
@@ -21,9 +22,38 @@ class HaxeMapping
             'bool'   => 'Bool',
             'float'  => 'Float',
             'array'  => 'Array<Dynamic>',
-            'void'   => 'Void'
+            'void'   => 'Void',
+            'mixed'  => 'Dynamic'
         ];
 
         return isset($defaultMapping[$type]) ? $defaultMapping[$type] : $type;
+    }
+
+    /**
+     * Try to find the type of the given $value
+     *
+     * @param  mixed $value Value to guess
+     *
+     * @return string
+     */
+    public static function guessValueType($value)
+    {
+        if (is_int($value)) {
+            return self::getHaxeType('int');
+        }
+
+        if (is_bool($value)) {
+            return self::getHaxeType('bool');
+        }
+
+        if (is_float($value)) {
+            return self::getHaxeType('float');
+        }
+
+        if (is_string($value)) {
+            return self::getHaxeType('string');
+        }
+
+        return Context::DEFAULT_TYPE;
     }
 }
