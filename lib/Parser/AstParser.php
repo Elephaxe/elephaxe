@@ -81,6 +81,11 @@ class AstParser
 
         // string/int/bool ... (in condition)
         if (!$ast instanceof \ast\Node) {
+            // Quote strings
+            if (is_string($ast)) {
+                return '"' . str_replace("\"", "\\\"", $ast) . '"';
+            }
+
             return $ast;
         }
 
@@ -111,15 +116,15 @@ class AstParser
                     $result .= Utils::indent($indent) . 'else {' . PHP_EOL;
                 } else {
                     $result .= $loopIndex == 0
-                        ? Utils::indent($indent) . 'if ('
-                        : Utils::indent($indent) . 'elseif ('
+                        ? Utils::indent($indent) . 'if'
+                        : Utils::indent($indent) . 'elseif'
                     ;
 
                     $context['in_condition'] = true;
                     $result .= $this->parse($ast->children['cond'], $context, $indent);
                     $context['in_condition'] = false;
 
-                    $result .= ') {' . PHP_EOL;
+                    $result .= '{' . PHP_EOL;
                 }
 
                 $result .= $this->parse($ast->children['stmts'], $context, $indent);
@@ -129,9 +134,9 @@ class AstParser
 
             // Condition
             case \ast\AST_BINARY_OP:
-                // $result .= $this->parse($ast->children['left'], $context, $indent);
-                // // @todo parse flag
-                // $result .= $this->parse($ast->children['right'], $context, $indent);
+                $result .= ' (' . $this->parse($ast->children['left'], $context, $indent);
+                $result .= $this->getStringForFlag($ast->flags);
+                $result .= $this->parse($ast->children['right'], $context, $indent) . ') ';
                 break;
 
             // Variable printing
@@ -141,5 +146,95 @@ class AstParser
         }
 
         return $result;
+    }
+
+    /**
+     * Returns string associated to the given flag
+     *
+     * @param  int    $flag
+     *
+     * @return string
+     */
+    private function getStringForFlag(int $flag)
+    {
+        switch ($flag) {
+            case \ast\flags\BINARY_BITWISE_OR:
+                return '';
+                break;
+            case \ast\flags\BINARY_BITWISE_AND:
+                return '';
+                break;
+            case \ast\flags\BINARY_BITWISE_XOR:
+                return '';
+                break;
+            case \ast\flags\BINARY_CONCAT:
+                return '.';
+                break;
+            case \ast\flags\BINARY_ADD:
+                return '+';
+                break;
+            case \ast\flags\BINARY_SUB:
+                return '-';
+                break;
+            case \ast\flags\BINARY_MUL:
+                return '*';
+                break;
+            case \ast\flags\BINARY_DIV:
+                return '/';
+                break;
+            case \ast\flags\BINARY_MOD:
+                return '%';
+                break;
+            case \ast\flags\BINARY_POW:
+                return '^';
+                break;
+            case \ast\flags\BINARY_SHIFT_LEFT:
+                return '<<';
+                break;
+            case \ast\flags\BINARY_SHIFT_RIGHT:
+                return '>>';
+                break;
+            case \ast\flags\BINARY_BOOL_AND:
+                return '&&';
+                break;
+            case \ast\flags\BINARY_BOOL_OR:
+                return '||';
+                break;
+            case \ast\flags\BINARY_BOOL_XOR:
+                return 'or';
+                break;
+            case \ast\flags\BINARY_IS_IDENTICAL:
+                return '==';
+                break;
+            case \ast\flags\BINARY_IS_NOT_IDENTICAL:
+                return '!=';
+                break;
+            case \ast\flags\BINARY_IS_EQUAL:
+                return '==';
+                break;
+            case \ast\flags\BINARY_IS_NOT_EQUAL:
+                return '!=';
+                break;
+            case \ast\flags\BINARY_IS_SMALLER:
+                return '<';
+                break;
+            case \ast\flags\BINARY_IS_SMALLER_OR_EQUAL:
+                return '<=';
+                break;
+            case \ast\flags\BINARY_IS_GREATER:
+                return '>';
+                break;
+            case \ast\flags\BINARY_IS_GREATER_OR_EQUAL:
+                return '>=';
+                break;
+            case \ast\flags\BINARY_SPACESHIP:
+                return '';
+                break;
+            case \ast\flags\BINARY_COALESCE:
+                return '';
+                break;
+        }
+
+        return '';
     }
 }
