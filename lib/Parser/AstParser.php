@@ -207,9 +207,12 @@ class AstParser
                 $result .= trim($this->parse($ast->children['prop'], $context, $indent), '"');
                 break;
 
+            // Call to simple function (not in class, most of them will be built-in)
+            case \ast\AST_CALL:
+                break;
+
             // Variable printing
             case \ast\AST_VAR:
-            var_dump($ast);
                 $result .= $ast->children['name'];
 
                 // Check if the variable exists
@@ -220,6 +223,13 @@ class AstParser
                     );
                 }
 
+                break;
+
+            // Print string
+            case \ast\AST_PRINT:
+            case \ast\AST_ECHO:
+                $result .= Utils::indent($indent);
+                $result .= 'trace(' . $this->parse($ast->children, $context, $indent) . ');' . PHP_EOL;
                 break;
         }
 

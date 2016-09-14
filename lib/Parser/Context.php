@@ -49,7 +49,10 @@ class Context
      */
     public function getFullClassName()
     {
-        return $this->currentNamespace . '\\' . $this->className;
+        return $this->currentNamespace
+            ? $this->currentNamespace . '\\' . $this->className
+            : $this->className
+        ;
     }
 
     /**

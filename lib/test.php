@@ -1,29 +1,16 @@
 <?php
 
-namespace Test\Haxe;
-
-class MyClass
+class Test
 {
-    /**
-     * @var string
-     */
-    private $test;
+    public static function main()
+    {
+        echo "Hello World";
 
-    private $myvar;
-
-    public function __construct() {
-
+        self::testExplode();
     }
 
-    public function test(string $x, $z = 5) : int {
-        if ($z == 5) {
-            $u = 5;
-            $this->test = "ok";
-        }
-        if ($z == 5) {
-            $u = 2;
-        }
-
-        return $z;
+    public static function testExplode()
+    {
+        return explode(',', "Test,explode");
     }
 }
