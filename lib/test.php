@@ -16,14 +16,13 @@ class MyClass
     }
 
     public function test(string $x, $z = 5) : int {
-        if ($z > 5) {
-            return 3;
-        } elseif ($z <= 2 && ($z >= 0 && $x == "elephaxe")) {
-            return 1;
-        } else {
-            return 2;
+        if ($z == 5) {
+            $u = 5;
+        }
+        if ($z == 5) {
+            $u = 2;
         }
 
-        return 2;
+        return $x;
     }
 }

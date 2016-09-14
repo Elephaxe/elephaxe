@@ -17,6 +17,12 @@ class AstParser
     private $code;
 
     /**
+     * Is there a return statement in the method ?
+     * @var bool
+     */
+    private $hasReturn = false;
+
+    /**
      * @param array $code
      */
     public function __construct(array $code)
@@ -29,20 +35,23 @@ class AstParser
     /**
      * Parse PHP code and returns haxe code
      *
+     * @param array $defaultContext Default context for the parse
+     *
      * @return string
      */
-    public function process()
+    public function process(array $defaultContext)
     {
         $ast = \ast\parse_code($this->code, $version=self::API_VERSION);
 
         var_dump($ast);
         print ast_dump($ast);
 
-        $context = [
+        $context = array_merge([
             'variables' => [],
             'in_if_statement' => false,
             'in_condition' => false
-        ];
+        ], $defaultContext);
+
         return $this->parse($ast, $context, 1);
     }
 
@@ -67,7 +76,9 @@ class AstParser
 
         // Expression
         if (is_array($ast) && isset($ast['expr'])) {
-            return $ast['expr'];
+            $ast = $ast['expr'];
+        } else if (is_array($ast) && isset($ast['name'])) {
+            $ast = $ast['name'];
         }
 
         // Array of nodes
@@ -91,16 +102,28 @@ class AstParser
 
         // Node type
         switch ($ast->kind) {
+            // A block of different elements
             case \ast\AST_STMT_LIST:
                 $result .= $this->parse($ast->children, $context, $indent + 1);
+
+                // Remove vars that are not in the scope anymore (> $indent)
+                foreach ($context['variables'] as $variable => $params) {
+                    if ($params['deep'] > $indent) {
+                        unset($context['variables'][$variable]);
+                    }
+                }
+
                 break;
 
+            // Return statement
             case \ast\AST_RETURN:
+                $this->hasReturn = true;
                 $result .= Utils::indent($indent) . 'return ';
                 $result .= $this->parse($ast->children, $context, $indent);
                 $result .= ';' . PHP_EOL;
                 break;
 
+            // "if" statement
             case \ast\AST_IF:
                 $context['in_if_statement'] = true;
                 $result .= $this->parse($ast->children, $context, $indent);
@@ -117,7 +140,7 @@ class AstParser
                 } else {
                     $result .= $loopIndex == 0
                         ? Utils::indent($indent) . 'if'
-                        : Utils::indent($indent) . 'elseif'
+                        : Utils::indent($indent) . 'else if'
                     ;
 
                     $context['in_condition'] = true;
@@ -137,6 +160,26 @@ class AstParser
                 $result .= ' (' . $this->parse($ast->children['left'], $context, $indent);
                 $result .= $this->getStringForFlag($ast->flags);
                 $result .= $this->parse($ast->children['right'], $context, $indent) . ') ';
+                break;
+
+            // Variable assignation (new or already existing)
+            case \ast\AST_ASSIGN:
+                $result .= Utils::indent($indent);
+
+                $varName = $this->parse($ast->children['var'], $context, $indent);
+                // Undeclared variable
+                if (!isset($context['variables'][$varName])) {
+                    $context['variables'][$varName] = [
+                        'deep' => $indent
+                    ];
+
+                    $result .= 'var ';
+                }
+
+                $result .= $varName;
+                $result .= ' = ';
+                $result .= $this->parse($ast->children['expr'], $context, $indent) . ';' . PHP_EOL;
+
                 break;
 
             // Variable printing
@@ -237,4 +280,29 @@ class AstParser
 
         return '';
     }
+
+    /**
+     * Get the value of Has Return
+     *
+     * @return bool
+     */
+    public function getHasReturn()
+    {
+        return $this->hasReturn;
+    }
+
+    /**
+     * Set the value of Has Return
+     *
+     * @param bool $hasReturn
+     *
+     * @return self
+     */
+    public function setHasReturn($hasReturn)
+    {
+        $this->hasReturn = $hasReturn;
+
+        return $this;
+    }
+
 }

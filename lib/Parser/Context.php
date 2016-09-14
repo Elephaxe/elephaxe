@@ -8,7 +8,8 @@ namespace Elephaxe\Parser;
 class Context
 {
     const DEFAULT_TYPE = 'Dynamic';
-    
+    const NO_TYPE = 'Void';
+
     /**
      * @var string
      */

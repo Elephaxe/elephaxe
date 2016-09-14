@@ -168,14 +168,21 @@ class FileParser
                     ? HaxeMethod::METHOD_VISIBILITY_PRIVATE
                     : HaxeMethod::METHOD_VISIBILITY_PUBLIC
                 )
-                ->setReturnType($method->hasReturnType()
-                    ? HaxeMapping::getHaxeType($method->getReturnType())
-                    : Context::DEFAULT_TYPE
-                )
-                ->setBody($astParser->process());
             ;
 
-            $this->parseArguments($method, $haxeMethod);
+            // Default context that contains everything needed for the code parsing
+            $defaultParseContext = [
+                'variables' => []
+            ];
+
+            $this->parseArguments($method, $haxeMethod, $defaultParseContext);
+
+            $haxeMethod->setBody($astParser->process($defaultParseContext));
+            $haxeMethod->setReturnType($method->hasReturnType()
+                ? HaxeMapping::getHaxeType($method->getReturnType())
+                : ($astParser->getHasReturn() ? Context::DEFAULT_TYPE : Context::NO_TYPE)
+            );
+
             $haxeClass->addMethod($haxeMethod);
         }
     }
@@ -185,9 +192,13 @@ class FileParser
      *
      * @param  ReflectionFunctionAbstract $reflection
      * @param  HaxeMethod                 $haxeMethod
+     * @param  array                      $defaultParseContext
      */
-    private function parseArguments(\ReflectionFunctionAbstract $reflection, HaxeMethod $haxeMethod)
-    {
+    private function parseArguments(
+        \ReflectionFunctionAbstract $reflection,
+        HaxeMethod $haxeMethod,
+        array &$defaultParseContext
+    ) {
         $args = $reflection->getParameters();
 
         $optionals = array();
@@ -199,6 +210,8 @@ class FileParser
                 ? HaxeMapping::guessValueType($argument->getDefaultValue())
                 : Context::DEFAULT_TYPE
             ;
+
+            $defaultParseContext['variables'][$argument->getName()] = ['deep' => 0];
 
             $haxeArgument
                 ->setName($argument->getName())
