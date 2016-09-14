@@ -123,7 +123,7 @@ class AstParser
 
                 // Remove vars that are not in the scope anymore (> $indent)
                 foreach ($context['variables'] as $variable => $params) {
-                    if ($params['deep'] > $indent) {
+                    if ($params['dept'] > $indent) {
                         unset($context['variables'][$variable]);
                     }
                 }
@@ -147,7 +147,7 @@ class AstParser
 
             // if / elseif / else : "else if" is forbidden
             case \ast\AST_IF_ELEM:
-                // Set to false in order to parse deep if statements
+                // Set to false in order to parse dept if statements
                 $context['in_if_statement'] = false;
 
                 if (is_null($ast->children['cond'])) {
@@ -183,10 +183,11 @@ class AstParser
                 $context['in_assign'] = true;
 
                 $varName = $this->parse($ast->children['var'], $context, $indent);
+
                 // Undeclared variable
-                if (!isset($context['variables'][$varName])) {
+                if (!isset($context['variables'][$varName]) && strpos($varName, 'this.') !== 0) {
                     $context['variables'][$varName] = [
-                        'deep' => $indent
+                        'dept' => $indent
                     ];
 
                     $result .= 'var ';
@@ -199,10 +200,19 @@ class AstParser
 
                 break;
 
+            // Class properties ($this->test)
+            case \ast\AST_PROP:
+                $result .= $this->parse($ast->children['expr'], $context, $indent);
+                $result .= '.';
+                $result .= trim($this->parse($ast->children['prop'], $context, $indent), '"');
+                break;
+
             // Variable printing
             case \ast\AST_VAR:
+            var_dump($ast);
                 $result .= $ast->children['name'];
 
+                // Check if the variable exists
                 if (!isset($context['variables'][$ast->children['name']]) && !$context['in_assign']) {
                     $this->errors[] = sprintf('Undefined variable %s in %s()',
                         $ast->children['name'],

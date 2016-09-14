@@ -18,11 +18,12 @@ class MyClass
     public function test(string $x, $z = 5) : int {
         if ($z == 5) {
             $u = 5;
+            $this->test = "ok";
         }
         if ($z == 5) {
             $u = 2;
         }
 
-        return $u;
+        return $z;
     }
 }

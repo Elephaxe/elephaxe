@@ -230,7 +230,7 @@ class FileParser
                 : Context::DEFAULT_TYPE
             ;
 
-            $defaultParseContext['variables'][$argument->getName()] = ['deep' => 0];
+            $defaultParseContext['variables'][$argument->getName()] = ['dept' => 0];
 
             $haxeArgument
                 ->setName($argument->getName())
