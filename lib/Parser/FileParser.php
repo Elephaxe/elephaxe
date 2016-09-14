@@ -4,6 +4,7 @@ namespace Elephaxe\Parser;
 
 use Elephaxe\Parser\Context;
 use Elephaxe\Parser\AstParser;
+use Elephaxe\Parser\ParserException;
 use Elephaxe\Haxe\HaxeClass;
 use Elephaxe\Haxe\HaxeMethod;
 use Elephaxe\Haxe\HaxeArgument;
@@ -33,6 +34,12 @@ class FileParser
     private $context;
 
     /**
+     * Errors found during the parsing
+     * @var array
+     */
+    private $errors = array();
+
+    /**
      * Parse the given file
      * @param  string $file Full path to the file
      */
@@ -55,7 +62,13 @@ class FileParser
     {
         $this->context = new Context();
         $this->buildClassMeta();
-        return $this->buildClassDefinition();
+        $result = $this->buildClassDefinition();
+
+        if (!empty($this->errors)) {
+            throw new ParserException($this->errors);
+        }
+
+        return $result;
     }
 
     /**
@@ -172,12 +185,18 @@ class FileParser
 
             // Default context that contains everything needed for the code parsing
             $defaultParseContext = [
+                'method_name' => $method->getName(),
                 'variables' => []
             ];
 
             $this->parseArguments($method, $haxeMethod, $defaultParseContext);
 
-            $haxeMethod->setBody($astParser->process($defaultParseContext));
+            try {
+                $haxeMethod->setBody($astParser->process($defaultParseContext));
+            } catch (ParserException $ex) {
+                $this->errors = array_merge($this->errors, $ex->getErrors());
+            }
+
             $haxeMethod->setReturnType($method->hasReturnType()
                 ? HaxeMapping::getHaxeType($method->getReturnType())
                 : ($astParser->getHasReturn() ? Context::DEFAULT_TYPE : Context::NO_TYPE)

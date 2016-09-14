@@ -23,6 +23,6 @@ class MyClass
             $u = 2;
         }
 
-        return $x;
+        return $u;
     }
 }

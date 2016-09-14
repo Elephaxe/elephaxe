@@ -3,6 +3,7 @@
 namespace Elephaxe\Parser;
 
 use Elephaxe\Tools\Utils;
+use Elephaxe\Parser\ParserException;
 
 /**
  * Parse AST from php extension
@@ -21,6 +22,12 @@ class AstParser
      * @var bool
      */
     private $hasReturn = false;
+
+    /**
+     * Set of errors found while parsing the AST
+     * @var array
+     */
+    private $errors = array();
 
     /**
      * @param array $code
@@ -48,11 +55,19 @@ class AstParser
 
         $context = array_merge([
             'variables' => [],
+            'method_name' => null,
             'in_if_statement' => false,
-            'in_condition' => false
+            'in_condition' => false,
+            'in_assign' => false
         ], $defaultContext);
 
-        return $this->parse($ast, $context, 1);
+        $result = $this->parse($ast, $context, 1);
+
+        if (!empty($this->errors)) {
+            throw new ParserException($this->errors);
+        }
+
+        return $result;
     }
 
     /**
@@ -165,6 +180,7 @@ class AstParser
             // Variable assignation (new or already existing)
             case \ast\AST_ASSIGN:
                 $result .= Utils::indent($indent);
+                $context['in_assign'] = true;
 
                 $varName = $this->parse($ast->children['var'], $context, $indent);
                 // Undeclared variable
@@ -179,12 +195,21 @@ class AstParser
                 $result .= $varName;
                 $result .= ' = ';
                 $result .= $this->parse($ast->children['expr'], $context, $indent) . ';' . PHP_EOL;
+                $context['in_assign'] = false;
 
                 break;
 
             // Variable printing
             case \ast\AST_VAR:
                 $result .= $ast->children['name'];
+
+                if (!isset($context['variables'][$ast->children['name']]) && !$context['in_assign']) {
+                    $this->errors[] = sprintf('Undefined variable %s in %s()',
+                        $ast->children['name'],
+                        $context['method_name']
+                    );
+                }
+
                 break;
         }
 
