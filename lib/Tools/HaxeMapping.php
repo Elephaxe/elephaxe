@@ -1,7 +1,8 @@
 <?php
 
 namespace Elephaxe\Tools;
-use phpDocumentor\Reflection\Types\Context;
+
+use Elephaxe\Parser\Context;
 
 class HaxeMapping
 {

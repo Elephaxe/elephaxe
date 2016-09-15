@@ -4,6 +4,7 @@ namespace Elephaxe\Parser;
 
 use Elephaxe\Tools\Utils;
 use Elephaxe\Parser\ParserException;
+use Elephaxe\Parser\PhpFunctionTranslator;
 
 /**
  * Parse AST from php extension
@@ -54,11 +55,13 @@ class AstParser
         print ast_dump($ast);
 
         $context = array_merge([
-            'variables' => [],
-            'method_name' => null,
-            'in_if_statement' => false,
-            'in_condition' => false,
-            'in_assign' => false
+            'variables'       => [],    // Variables declared in the code parsed
+            'method_name'     => null,  // Name of the current method parsed
+            'in_if_statement' => false, // Is in an if() statement
+            'in_condition'    => false, // Is inside a if() or elseif() statement
+            'in_assign'       => false, // Variable assignation ($x = ...)
+            'ignore_fq_name'  => true,  // Ignore flag "NAME_NOT_FQ",
+            'in_root_stmt'    => false  // In root of a statement list (direct child of AST_STMT_LIST)
         ], $defaultContext);
 
         $result = $this->parse($ast, $context, 1);
@@ -80,7 +83,7 @@ class AstParser
      *
      * @return string
      */
-    private function parse($ast, array &$context, int $indent, int $loopIndex = 0)
+    private function parse($ast, array &$context, int $indent, int $loopIndex = 0) : string
     {
         $result = '';
 
@@ -115,10 +118,20 @@ class AstParser
             return $ast;
         }
 
+        // Check if we are just inside a block.
+        // Remove the entry inside 'in_root_stmt' cause we will not be in for the next nodes
+        $isInRoot = false;
+        if ($context['in_root_stmt']) {
+            $isInRoot = true;
+            $context['in_root_stmt'] = false;
+        }
+
         // Node type
         switch ($ast->kind) {
             // A block of different elements
             case \ast\AST_STMT_LIST:
+                $context['in_root_stmt'] = true;
+
                 $result .= $this->parse($ast->children, $context, $indent + 1);
 
                 // Remove vars that are not in the scope anymore (> $indent)
@@ -207,8 +220,35 @@ class AstParser
                 $result .= trim($this->parse($ast->children['prop'], $context, $indent), '"');
                 break;
 
-            // Call to simple function (not in class, most of them will be built-in)
+            // Call to simple function (not in class, built-in PHP function)
             case \ast\AST_CALL:
+                if ($isInRoot) {
+                    $result .= Utils::indent($indent);
+                }
+
+                $functionName = trim($this->parse($ast->children['expr'], $context, $indent), '"');
+                $functionArgs = [];
+
+                if (!empty($ast->children['args']->children)) {
+                    foreach ($ast->children['args']->children as $child) {
+                        $functionArgs[] = $this->parse($child, $context, $indent);
+                    }
+                }
+
+                $result .= PhpFunctionTranslator::translate($functionName, $functionArgs);
+
+                if ($isInRoot) {
+                    $result .= ';' . PHP_EOL;
+                }
+
+                break;
+
+            // Function/method name
+            case \ast\AST_NAME:
+                if ($context['ignore_fq_name']) {
+                    return $this->parse($ast->children, $context, $indent);
+                }
+
                 break;
 
             // Variable printing
@@ -233,6 +273,11 @@ class AstParser
                 break;
         }
 
+        // Check if we are just inside a block and put again in_root_stmt if needed
+        if ($isInRoot) {
+            $context['in_root_stmt'] = true;
+        }
+
         return $result;
     }
 
@@ -243,7 +288,7 @@ class AstParser
      *
      * @return string
      */
-    private function getStringForFlag(int $flag)
+    private function getStringForFlag(int $flag) : string
     {
         switch ($flag) {
             case \ast\flags\BINARY_BITWISE_OR:
@@ -331,7 +376,7 @@ class AstParser
      *
      * @return bool
      */
-    public function getHasReturn()
+    public function getHasReturn() : bool
     {
         return $this->hasReturn;
     }
@@ -343,7 +388,7 @@ class AstParser
      *
      * @return self
      */
-    public function setHasReturn($hasReturn)
+    public function setHasReturn($hasReturn) : self
     {
         $this->hasReturn = $hasReturn;
 

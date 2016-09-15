@@ -11,6 +11,12 @@ class Test
 
     public static function testExplode()
     {
-        return explode(',', "Test,explode");
+        explode(',', "test");
+
+        if (1 == 1) {
+            explode(',', "test2");
+        }
+
+        return explode(',', "test3");
     }
 }
